@@ -1,0 +1,31 @@
+# Auto-registers Prometheus as a datasource on Grafana startup.
+#
+# The `uid` matters: fetch-dashboards.sh rewrites every downloaded dashboard to
+# reference this exact uid. Change it here and you must change it there too.
+
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    uid: prometheus
+    access: proxy
+    isDefault: true
+    editable: true
+
+    # ---- Pick the URL that matches how you run Grafana ----
+    #
+    # Grafana in Docker (this compose file):  http://host.docker.internal:9090
+    # Grafana as a native binary/service:     http://localhost:9090
+    #
+    # Both reach the same thing: kind forwards host port 9090 to the
+    # Prometheus NodePort inside the cluster.
+    url: http://host.docker.internal:9090
+
+    jsonData:
+      httpMethod: POST
+      # Should match `scrapeInterval` in the Helm values, otherwise Grafana
+      # picks awkward step sizes and graphs look gappy.
+      timeInterval: 30s
+      manageAlerts: false
+      prometheusType: Prometheus

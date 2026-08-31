@@ -1,0 +1,20 @@
+# Tells Grafana to load every dashboard JSON it finds on disk into a folder
+# called "Kubernetes". Files are re-read every 30s, so dropping a new JSON into
+# grafana/dashboards/ makes it appear without restarting the container.
+
+apiVersion: 1
+
+providers:
+  - name: kubernetes
+    orgId: 1
+    folder: Kubernetes
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    # Lets you tweak a dashboard in the UI without Grafana reverting it on the
+    # next sync. Your edits are lost if the file changes, though — treat the
+    # JSON in git as the source of truth.
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards
+      foldersFromFilesStructure: false

@@ -1,0 +1,45 @@
+# Grafana running on the HOST machine, pointed at Prometheus inside kind.
+#
+# Start with:  docker compose -f grafana/docker-compose.yml up -d
+# Open:        http://localhost:3000   (admin / admin)
+#
+# The datasource and dashboards are provisioned from files in this repo, so a
+# fresh container comes up already wired to Prometheus with dashboards loaded.
+# No clicking through the UI, no manual import.
+
+services:
+  grafana:
+    image: grafana/grafana:11.4.0
+    container_name: grafana-local
+    restart: unless-stopped
+
+    ports:
+      - "3000:3000"
+
+    # Lets the container resolve `host.docker.internal` to the host machine on
+    # Linux. That is how it reaches kind's forwarded port 9090.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      # Local dev only — skip the "change your password" wall.
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      # Quieter startup logs.
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      # Useful panels that the k8s dashboards below reference.
+      GF_INSTALL_PLUGINS: ""
+
+    volumes:
+      # Datasource + dashboard-provider definitions
+      - ./provisioning:/etc/grafana/provisioning:ro
+      # The dashboard JSON files themselves
+      - ./dashboards:/var/lib/grafana/dashboards:ro
+      # Persist users, prefs, and starred dashboards across restarts
+      - grafana-data:/var/lib/grafana
+
+volumes:
+  grafana-data:

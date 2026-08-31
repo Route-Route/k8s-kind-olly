@@ -1,0 +1,5 @@
+Dashboard JSON files land here.
+
+They are gitignored by default because scripts/fetch-dashboards.sh downloads
+them from grafana.com. To make this repo work with no network access, run that
+script once and then remove the ignore rule in .gitignore.
