@@ -15,6 +15,9 @@ help: ## Show this help
 		| awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}'
 	@echo ""
 
+.PHONY: up
+up: cluster monitoring dashboards grafana ## Create the kind cluster, install monitoring, and start Grafana
+
 .PHONY: cluster
 cluster: ## Create the kind cluster
 	@bash scripts/create-cluster.sh
