@@ -1,0 +1,41 @@
+# kind cluster for local Kubernetes monitoring.
+#
+# The extraPortMappings below are the reason Grafana on your host can talk to
+# Prometheus inside the cluster WITHOUT a babysat `kubectl port-forward`.
+# A NodePort Service inside the cluster binds to 30090 on the node container,
+# and kind forwards that to 9090 on your laptop.
+#
+#   host:9090  ->  control-plane container:30090  ->  Prometheus Service
+#   host:9093  ->  control-plane container:30093  ->  Alertmanager Service
+#
+# Create with:  kind create cluster --config kind/cluster.yaml
+
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: monitoring
+
+nodes:
+  - role: control-plane
+    # Pin the node image so this repo behaves the same on every machine.
+    # Find newer tags at https://github.com/kubernetes-sigs/kind/releases
+    image: kindest/node:v1.31.0@sha256:53df588e04085fd41ae12de0c3fe4c72f7013bba32a20e7325357a1ac94ba865
+    extraPortMappings:
+      # Prometheus
+      - containerPort: 30090
+        hostPort: 9090
+        protocol: TCP
+        # NOTE: default listenAddress is 0.0.0.0, which means anyone on your
+        # LAN can reach Prometheus. On an untrusted network, uncomment the line
+        # below and switch Grafana to the kind-network approach described in
+        # docs/troubleshooting.md.
+        # listenAddress: "127.0.0.1"
+      # Alertmanager
+      - containerPort: 30093
+        hostPort: 9093
+        protocol: TCP
+
+  - role: worker
+    image: kindest/node:v1.31.0@sha256:53df588e04085fd41ae12de0c3fe4c72f7013bba32a20e7325357a1ac94ba865
+
+  - role: worker
+    image: kindest/node:v1.31.0@sha256:53df588e04085fd41ae12de0c3fe4c72f7013bba32a20e7325357a1ac94ba865
