@@ -1,0 +1,20 @@
+# Grafana dashboard JSON is fetched at setup time by scripts/fetch-dashboards.sh.
+# Delete the line below if you'd rather commit them for an offline-capable repo.
+grafana/dashboards/*.json
+
+# Local overrides
+helm/values-local.yaml
+.env
+*.local.yaml
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+*.swp
+
+# Kubernetes / Helm junk
+kubeconfig
+*.kubeconfig
+charts/
+*.tgz
