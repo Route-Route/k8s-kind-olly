@@ -1,0 +1,127 @@
+# Values for prometheus-community/kube-prometheus-stack, tuned for a local
+# kind cluster whose Grafana lives OUTSIDE the cluster, on the host machine.
+#
+# Apply with:
+#   helm upgrade --install kube-prometheus-stack \
+#     prometheus-community/kube-prometheus-stack \
+#     -n monitoring --create-namespace \
+#     -f helm/values-kube-prometheus-stack.yaml
+
+# ---------------------------------------------------------------------------
+# Grafana: DISABLED on purpose.
+# We run Grafana on the host (Docker or native binary), so the chart's bundled
+# Grafana would just be a second, confusing instance eating RAM.
+# ---------------------------------------------------------------------------
+grafana:
+  enabled: false
+
+# ---------------------------------------------------------------------------
+# Prometheus
+# ---------------------------------------------------------------------------
+prometheus:
+  service:
+    type: NodePort
+    nodePort: 30090   # must match kind/cluster.yaml extraPortMappings
+
+  prometheusSpec:
+    # Scrape ALL ServiceMonitors/PodMonitors in the cluster, not just ones
+    # labelled with this release. Without this, monitors you write yourself
+    # are silently ignored — a classic first-time gotcha.
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+    probeSelectorNilUsesHelmValues: false
+
+    retention: 7d
+    retentionSize: 4GB
+    scrapeInterval: 30s
+    evaluationInterval: 30s
+
+    # Keep a laptop-friendly footprint.
+    resources:
+      requests:
+        cpu: 100m
+        memory: 512Mi
+      limits:
+        memory: 2Gi
+
+    # kind ships a default StorageClass (rancher.io/local-path), so a PVC works
+    # fine and survives pod restarts. Metrics still die with the cluster.
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 5Gi
+
+# ---------------------------------------------------------------------------
+# Alertmanager
+# ---------------------------------------------------------------------------
+alertmanager:
+  service:
+    type: NodePort
+    nodePort: 30093   # must match kind/cluster.yaml extraPortMappings
+  alertmanagerSpec:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 64Mi
+      limits:
+        memory: 256Mi
+
+# ---------------------------------------------------------------------------
+# Control-plane components.
+#
+# In kind, kube-controller-manager / kube-scheduler / etcd / kube-proxy bind
+# their metrics endpoints to 127.0.0.1 inside the node container. Prometheus
+# cannot reach them, so their ServiceMonitors sit permanently DOWN and clutter
+# the Targets page with red.
+#
+# Disabled by default for a clean install. To actually collect them, see
+# docs/troubleshooting.md ("Enabling control-plane metrics on kind").
+# ---------------------------------------------------------------------------
+kubeControllerManager:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeProxy:
+  enabled: false
+kubeEtcd:
+  enabled: false
+
+# ---------------------------------------------------------------------------
+# These are the components that actually feed the dashboards. Keep them on.
+# ---------------------------------------------------------------------------
+kubeStateMetrics:
+  enabled: true
+
+nodeExporter:
+  enabled: true
+
+prometheus-node-exporter:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+    limits:
+      memory: 128Mi
+
+prometheusOperator:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      memory: 512Mi
+
+# Default alert rules reference control-plane components we disabled above,
+# which would fire noisy "target missing" alerts on a dev cluster.
+defaultRules:
+  create: true
+  rules:
+    etcd: false
+    kubeControllerManager: false
+    kubeSchedulerAlerting: false
+    kubeSchedulerRecording: false
+    kubeProxy: false
