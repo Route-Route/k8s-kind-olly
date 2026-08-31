@@ -16,7 +16,7 @@ help: ## Show this help
 	@echo ""
 
 .PHONY: up
-up: cluster monitoring dashboards grafana ## Create the kind cluster, install monitoring, and start Grafana
+up: cluster monitoring dashboards grafana verify ## Full setup, start to finish
 
 .PHONY: cluster
 cluster: ## Create the kind cluster
